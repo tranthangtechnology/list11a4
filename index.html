@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Học Sinh 11A4 - Ultimate V5.0</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; margin: 0; padding: 10px; }
+        .container { max-width: 1250px; margin: 0 auto; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        
+        .header-section { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #007bff; padding-bottom: 15px; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+        h1 { margin: 0; color: #2c3e50; font-size: 24px; }
+        
+        .status-badge { padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; display: inline-block; }
+        .role-super { background: #6610f2; color: #fff; }
+        .role-admin { background: #d1e7dd; color: #0f5132; }
+        .role-user { background: #cfe2ff; color: #084298; }
+        .role-guest { background: #f8d7da; color: #842029; }
+
+        .stats-bar { display: flex; gap: 15px; background: #e7f1ff; padding: 15px; border-radius: 8px; margin-bottom: 20px; color: #004085; font-weight: 600; flex-wrap: wrap; }
+        .stats-item span { color: #dc3545; font-size: 1.2em; margin-left: 5px; }
+
+        .panel { background: #fff3cd; border: 1px solid #ffeeba; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: none; }
+        .admin-title { font-weight: bold; margin-bottom: 15px; color: #856404; text-transform: uppercase; border-bottom: 1px solid #ffeeba; padding-bottom: 5px; font-size: 14px; }
+        
+        .form-group { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 15px; }
+        input, select, textarea { padding: 10px; border: 1px solid #ced4da; border-radius: 6px; width: 100%; box-sizing: border-box; font-size: 14px; outline: none; }
+        
+        button { cursor: pointer; padding: 10px 15px; border: none; border-radius: 6px; color: white; font-weight: 600; transition: 0.2s; font-size: 14px; }
+        .btn-add { background-color: #198754; grid-column: 1 / -1; }
+        .btn-edit { background-color: #ffc107; color: #000; font-size: 12px; padding: 5px 8px; }
+        .btn-delete { background-color: #dc3545; font-size: 12px; padding: 5px 8px; }
+        .btn-excel { background-color: #198754; }
+        .btn-save-notice { background-color: #fd7e14; margin-top: 10px; }
+
+        .log-section { background: white; border: 1px solid #ddd; border-radius: 6px; overflow: hidden; }
+        .log-header { background: #6610f2; color: white; display: grid; grid-template-columns: 120px 150px 1fr; }
+        .log-header div { padding: 10px; font-weight: bold; font-size: 12px; text-transform: uppercase; border-right: 1px solid rgba(255,255,255,0.2); }
+        .log-body { max-height: 250px; overflow-y: auto; }
+        .log-row { display: grid; grid-template-columns: 120px 150px 1fr; border-bottom: 1px solid #eee; }
+        .log-row div { padding: 8px 10px; font-size: 12px; border-right: 1px solid #eee; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+        .table-responsive { overflow-x: auto; border-radius: 8px; box-shadow: 0 0 0 1px #dee2e6; margin-top: 20px; }
+        table { width: 100%; border-collapse: collapse; min-width: 1000px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #dee2e6; }
+        th { background-color: #007bff; color: white; text-transform: uppercase; font-size: 12px; }
+
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(3px); align-items: center; justify-content: center; }
+        .modal-content { background: white; padding: 25px; border-radius: 12px; width: 500px; max-width: 95%; position: relative; box-sizing: border-box; }
+        .close-btn { position: absolute; right: 20px; top: 15px; font-size: 28px; cursor: pointer; color: #aaa; }
+        
+        .search-input { width: 300px; padding: 10px; border: 2px solid #007bff; border-radius: 6px; }
+        .badge-doan { background: #ff4757; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-section">
+        <h1>🎓 Quản Lý Lớp 11A4</h1>
+        <div class="admin-controls">
+            <span id="userStatus" class="status-badge role-guest">Khách</span>
+            <button id="btnAuth" style="background:#0d6efd" onclick="moFormDangNhap()">🔑 Đăng nhập</button>
+        </div>
+    </div>
+
+    <div class="stats-bar">
+        <div class="stats-item">Tổng sĩ số: <span id="tongSiSo">0</span></div>
+        <div class="stats-item">Nam: <span id="tongNam">0</span> 👦</div>
+        <div class="stats-item">Nữ: <span id="tongNu">0</span> 👧</div>
+        <div class="stats-item">Đoàn viên: <span id="tongDoanVien">0</span> 🇻🇳</div>
+    </div>
+
+    <div id="superAdminPanel" class="panel">
+        <div style="display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px;">
+            <div>
+                <div class="admin-title">🛡️ Tài khoản phụ</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1fr 60px; gap: 5px;">
+                    <input type="text" id="newUsername" placeholder="User">
+                    <input type="text" id="newPassword" placeholder="Pass">
+                    <select id="newRole"><option value="admin">Phó Admin</option></select>
+                    <button style="background:#6610f2" onclick="themTaiKhoan()">Tạo</button>
+                </div>
+                <table style="min-width: 100%; font-size: 12px; margin-top: 10px;">
+                    <tbody id="bodyTaiKhoan"></tbody>
+                </table>
+            </div>
+            <div>
+                <div class="admin-title">📜 Nhật ký hệ thống</div>
+                <div class="log-section"><div class="log-body" id="bodyLog"></div></div>
+                <button style="background:#dc3545; margin-top: 5px;" onclick="xoaLog()">Xóa lịch sử</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="adminArea" class="panel">
+        <div class="admin-title">🛠️ Thêm học sinh mới</div>
+        <div class="form-group">
+            <input type="text" id="hoTen" placeholder="Họ và Tên">
+            <select id="gioiTinh"><option value="Nam">Nam</option><option value="Nữ">Nữ</option></select>
+            <select id="isDoanVien"><option value="Chưa">Chưa vào Đoàn</option><option value="Đoàn viên">Đoàn viên</option></select>
+            <input type="text" id="danToc" placeholder="Dân tộc">
+            <input type="text" id="ngaySinh" placeholder="Ngày sinh">
+            <input type="text" id="sdt" placeholder="SĐT">
+            <input type="text" id="email" placeholder="Email">
+            <input type="text" id="queQuan" placeholder="Quê quán">
+            <input type="text" id="diaChi" placeholder="Địa chỉ" style="grid-column: span 2;">
+            <button class="btn-add" onclick="themHocSinh()">➕ Thêm Học Sinh</button>
+        </div>
+        <button class="btn-excel" onclick="xuatHocSinhExcel()">📥 Xuất Excel (CSV)</button>
+    </div>
+
+    <div class="search-container">
+        <input type="text" id="searchInput" class="search-input" onkeyup="timKiemHocSinh()" placeholder="🔍 Tìm tên học sinh...">
+    </div>
+
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th>STT</th><th>Họ Tên</th><th>Giới Tính</th><th>Đoàn Viên</th><th>Dân Tộc</th><th>Ngày Sinh</th><th>SĐT</th><th>Quê Quán</th><th>Địa Chỉ</th><th>Hành Động</th>
+                </tr>
+            </thead>
+            <tbody id="thanBang"></tbody>
+        </table>
+    </div>
+</div>
+
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="dongFormSua()">&times;</span>
+        <h3>Sửa Thông Tin</h3>
+        <input type="hidden" id="editId">
+        <input type="text" id="editHoTen" placeholder="Họ tên" style="margin-bottom:10px">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px">
+            <select id="editGioiTinh"><option value="Nam">Nam</option><option value="Nữ">Nữ</option></select>
+            <select id="editDoanVien"><option value="Chưa">Chưa vào Đoàn</option><option value="Đoàn viên">Đoàn viên</option></select>
+        </div>
+        <input type="text" id="editNgaySinh" placeholder="Ngày sinh" style="margin-bottom:10px">
+        <input type="text" id="editSdt" placeholder="SĐT" style="margin-bottom:10px">
+        <input type="text" id="editQueQuan" placeholder="Quê quán" style="margin-bottom:10px">
+        <input type="text" id="editDiaChi" placeholder="Địa chỉ" style="margin-bottom:10px">
+        <button style="background:#ffc107; color:#000; width:100%" onclick="luuCapNhatHS()">LƯU THAY ĐỔI</button>
+    </div>
+</div>
+
+<div id="loginModal" class="modal">
+    <div class="modal-content" style="width:300px">
+        <span class="close-btn" onclick="dongFormDangNhap()">&times;</span>
+        <h3>Đăng nhập</h3>
+        <input type="text" id="loginUser" placeholder="Tên đăng nhập" style="margin-bottom:10px">
+        <input type="password" id="loginPass" placeholder="Mật khẩu" style="margin-bottom:10px">
+        <button style="background:#007bff; width:100%" onclick="xuLyDangNhap()">ĐĂNG NHẬP</button>
+    </div>
+</div>
+
+<script>
+    const KEY_STUDENTS = "DS_HS_11A4", KEY_ACCOUNTS = "DS_TK_11A4", KEY_LOGS = "LOG_11A4";
+    var currentRole = 'guest', currentUser = 'Khách', danhSachHocSinh = [], danhSachTaiKhoan = [], danhSachLog = [];
+
+    window.onload = function() {
+        danhSachHocSinh = JSON.parse(localStorage.getItem(KEY_STUDENTS)) || [];
+        danhSachTaiKhoan = JSON.parse(localStorage.getItem(KEY_ACCOUNTS)) || [];
+        danhSachLog = JSON.parse(localStorage.getItem(KEY_LOGS)) || [];
+        capNhatGiaoDien(); hienThiHocSinh();
+    };
+
+    function hienThiHocSinh(data = danhSachHocSinh) {
+        let tbody = document.getElementById("thanBang"), html = '';
+        let canEdit = (currentRole === 'super_admin' || currentRole === 'admin');
+        
+        data.forEach((hs, i) => {
+            let isDoan = hs.doanVien === 'Đoàn viên' ? '<span class="badge-doan">🇻🇳 Đoàn viên</span>' : 'Chưa';
+            html += `<tr>
+                <td>${i+1}</td>
+                <td><b>${hs.hoTen}</b></td>
+                <td>${hs.gioiTinh}</td>
+                <td>${isDoan}</td>
+                <td>${hs.danToc || ''}</td>
+                <td>${hs.ngaySinh || ''}</td>
+                <td>${hs.sdt || ''}</td>
+                <td>${hs.queQuan || ''}</td>
+                <td>${hs.diaChi || ''}</td>
+                <td>${canEdit ? `<button class="btn-edit" onclick="suaHocSinh(${hs.id})">Sửa</button> <button class="btn-delete" onclick="xoaHocSinh(${hs.id})">Xóa</button>` : '---'}</td>
+            </tr>`;
+        });
+        tbody.innerHTML = html || '<tr><td colspan="10" style="text-align:center">Trống</td></tr>';
+        
+        // Cập nhật thống kê
+        document.getElementById("tongSiSo").innerText = danhSachHocSinh.length;
+        document.getElementById("tongNam").innerText = danhSachHocSinh.filter(h=>h.gioiTinh==='Nam').length;
+        document.getElementById("tongNu").innerText = danhSachHocSinh.filter(h=>h.gioiTinh==='Nữ').length;
+        document.getElementById("tongDoanVien").innerText = danhSachHocSinh.filter(h=>h.doanVien==='Đoàn viên').length;
+    }
+
+    function themHocSinh() {
+        let t = document.getElementById("hoTen").value;
+        if(!t) return alert("Nhập tên!");
+        let hs = { 
+            id: Date.now(), 
+            hoTen: t, 
+            gioiTinh: document.getElementById("gioiTinh").value, 
+            doanVien: document.getElementById("isDoanVien").value,
+            danToc: document.getElementById("danToc").value, 
+            ngaySinh: document.getElementById("ngaySinh").value, 
+            sdt: document.getElementById("sdt").value, 
+            queQuan: document.getElementById("queQuan").value, 
+            diaChi: document.getElementById("diaChi").value 
+        };
+        danhSachHocSinh.push(hs);
+        saveData();
+        ghiLog(`Thêm HS: ${t}`);
+        hienThiHocSinh();
+        alert("Đã thêm thành công!");
+    }
+
+    function suaHocSinh(id) {
+        let hs = danhSachHocSinh.find(h => h.id === id);
+        document.getElementById("editId").value = hs.id;
+        document.getElementById("editHoTen").value = hs.hoTen;
+        document.getElementById("editGioiTinh").value = hs.gioiTinh;
+        document.getElementById("editDoanVien").value = hs.doanVien;
+        document.getElementById("editNgaySinh").value = hs.ngaySinh;
+        document.getElementById("editSdt").value = hs.sdt;
+        document.getElementById("editQueQuan").value = hs.queQuan;
+        document.getElementById("editDiaChi").value = hs.diaChi;
+        document.getElementById("editModal").style.display = "flex";
+    }
+
+    function luuCapNhatHS() {
+        let id = parseInt(document.getElementById("editId").value);
+        let idx = danhSachHocSinh.findIndex(h => h.id === id);
+        danhSachHocSinh[idx] = { 
+            ...danhSachHocSinh[idx],
+            hoTen: document.getElementById("editHoTen").value,
+            gioiTinh: document.getElementById("editGioiTinh").value,
+            doanVien: document.getElementById("editDoanVien").value,
+            ngaySinh: document.getElementById("editNgaySinh").value,
+            sdt: document.getElementById("editSdt").value,
+            queQuan: document.getElementById("editQueQuan").value,
+            diaChi: document.getElementById("editDiaChi").value
+        };
+        saveData(); hienThiHocSinh(); dongFormSua();
+        ghiLog(`Sửa HS: ${danhSachHocSinh[idx].hoTen}`);
+    }
+
+    function xuatHocSinhExcel() {
+        let csv = "\ufeffSTT,Họ Tên,Giới Tính,Đoàn Viên,Ngày Sinh,SĐT,Quê Quán\n";
+        danhSachHocSinh.forEach((hs, i) => {
+            csv += `${i + 1},${hs.hoTen},${hs.gioiTinh},${hs.doanVien},${hs.ngaySinh},${hs.sdt},${hs.queQuan}\n`;
+        });
+        let blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        let link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "Danh_Sach_11A4.csv";
+        link.click();
+    }
+
+    function xuLyDangNhap() {
+        let u = document.getElementById("loginUser").value, p = document.getElementById("loginPass").value;
+        if(u==='trannhuthang' && p==='26032009') { currentRole = 'super_admin'; currentUser = 'Thắng'; }
+        else {
+            let acc = danhSachTaiKhoan.find(a => a.user === u && a.pass === p);
+            if(acc) { currentRole = acc.role; currentUser = u; }
+            else return alert("Lỗi!");
+        }
+        dongFormDangNhap(); capNhatGiaoDien(); hienThiHocSinh();
+    }
+
+    function saveData() { localStorage.setItem(KEY_STUDENTS, JSON.stringify(danhSachHocSinh)); }
+    function ghiLog(act) {
+        danhSachLog.unshift({ time: new Date().toLocaleString(), user: currentUser, action: act });
+        localStorage.setItem(KEY_LOGS, JSON.stringify(danhSachLog.slice(0,20)));
+    }
+    function capNhatGiaoDien() {
+        document.getElementById("superAdminPanel").style.display = currentRole==='super_admin'?'block':'none';
+        document.getElementById("adminArea").style.display = (currentRole==='admin'||currentRole==='super_admin')?'block':'none';
+        document.getElementById("userStatus").innerText = currentUser;
+    }
+    function moFormDangNhap() { document.getElementById("loginModal").style.display = "flex"; }
+    function dongFormDangNhap() { document.getElementById("loginModal").style.display = "none"; }
+    function dongFormSua() { document.getElementById("editModal").style.display = "none"; }
+    function xoaHocSinh(id) { if(confirm("Xóa?")) { danhSachHocSinh = danhSachHocSinh.filter(h=>h.id!==id); saveData(); hienThiHocSinh(); } }
+</script>
+</body>
+</html>
