@@ -186,7 +186,6 @@
         });
         tbody.innerHTML = html || '<tr><td colspan="10" style="text-align:center">Trống</td></tr>';
         
-        // Cập nhật thống kê
         document.getElementById("tongSiSo").innerText = danhSachHocSinh.length;
         document.getElementById("tongNam").innerText = danhSachHocSinh.filter(h=>h.gioiTinh==='Nam').length;
         document.getElementById("tongNu").innerText = danhSachHocSinh.filter(h=>h.gioiTinh==='Nữ').length;
@@ -283,4 +282,5 @@
     function xoaHocSinh(id) { if(confirm("Xóa?")) { danhSachHocSinh = danhSachHocSinh.filter(h=>h.id!==id); saveData(); hienThiHocSinh(); } }
 </script>
 </body>
+
 </html>
