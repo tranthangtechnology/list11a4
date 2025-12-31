@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Học Sinh 11A4 - Firebase Connected</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; margin: 0; padding: 10px; }
+        .container { max-width: 1250px; margin: 0 auto; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        
+        .header-section { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #007bff; padding-bottom: 15px; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+        h1 { margin: 0; color: #2c3e50; font-size: 24px; }
+        
+        .status-badge { padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; display: inline-block; }
+        .role-super { background: #6610f2; color: #fff; }
+        .role-admin { background: #d1e7dd; color: #0f5132; }
+        .role-user { background: #cfe2ff; color: #084298; }
+        .role-guest { background: #f8d7da; color: #842029; }
+
+        .stats-bar { display: flex; gap: 15px; background: #e7f1ff; padding: 15px; border-radius: 8px; margin-bottom: 20px; color: #004085; font-weight: 600; flex-wrap: wrap; }
+        .stats-item span { color: #dc3545; font-size: 1.2em; margin-left: 5px; }
+
+        .panel { background: #fff3cd; border: 1px solid #ffeeba; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: none; }
+        .admin-title { font-weight: bold; margin-bottom: 15px; color: #856404; text-transform: uppercase; border-bottom: 1px solid #ffeeba; padding-bottom: 5px; font-size: 14px; }
+        
+        .form-group { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-bottom: 15px; }
+        input, select, textarea { padding: 10px; border: 1px solid #ced4da; border-radius: 6px; width: 100%; box-sizing: border-box; font-size: 14px; outline: none; }
+        
+        button { cursor: pointer; padding: 10px 15px; border: none; border-radius: 6px; color: white; font-weight: 600; transition: 0.2s; font-size: 14px; }
+        .btn-add { background-color: #198754; grid-column: 1 / -1; }
+        .btn-edit { background-color: #ffc107; color: #000; font-size: 12px; padding: 5px 8px; }
+        .btn-delete { background-color: #dc3545; font-size: 12px; padding: 5px 8px; }
+        .btn-excel { background-color: #198754; }
+
+        .log-section { background: white; border: 1px solid #ddd; border-radius: 6px; overflow: hidden; }
+        .log-body { max-height: 250px; overflow-y: auto; padding: 10px; font-size: 12px; }
+
+        .table-responsive { overflow-x: auto; border-radius: 8px; box-shadow: 0 0 0 1px #dee2e6; margin-top: 20px; }
+        table { width: 100%; border-collapse: collapse; min-width: 1000px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #dee2e6; }
+        th { background-color: #007bff; color: white; text-transform: uppercase; font-size: 12px; }
+
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(3px); align-items: center; justify-content: center; }
+        .modal-content { background: white; padding: 25px; border-radius: 12px; width: 500px; max-width: 95%; position: relative; box-sizing: border-box; }
+        .close-btn { position: absolute; right: 20px; top: 15px; font-size: 28px; cursor: pointer; color: #aaa; }
+        
+        .search-input { width: 300px; padding: 10px; border: 2px solid #007bff; border-radius: 6px; }
+        .badge-doan { background: #ff4757; color: white; padding: 2px 6px; border-radius: 4px; font-size: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-section">
+        <h1>🎓 Quản Lý Lớp 11A4 (Online)</h1>
+        <div class="admin-controls">
+            <span id="userStatus" class="status-badge role-guest">Khách</span>
+            <button id="btnAuth" style="background:#0d6efd" onclick="window.moFormDangNhap()">🔑 Đăng nhập</button>
+            <button id="btnLogout" style="background:#6c757d; display:none" onclick="window.dangXuat()">🚪 Đăng xuất</button>
+        </div>
+    </div>
+
+    <div class="stats-bar">
+        <div class="stats-item">Tổng sĩ số: <span id="tongSiSo">0</span></div>
+        <div class="stats-item">Nam: <span id="tongNam">0</span> 👦</div>
+        <div class="stats-item">Nữ: <span id="tongNu">0</span> 👧</div>
+        <div class="stats-item">Đoàn viên: <span id="tongDoanVien">0</span> 🇻🇳</div>
+    </div>
+
+    <div id="superAdminPanel" class="panel">
+        <div class="admin-title">🛡️ Quản lý hệ thống</div>
+        <p>Tính năng quản lý tài khoản đang được bảo trì để ưu tiên tính năng học sinh.</p>
+    </div>
+
+    <div id="adminArea" class="panel">
+        <div class="admin-title">🛠️ Thêm học sinh mới</div>
+        <div class="form-group">
+            <input type="text" id="hoTen" placeholder="Họ và Tên (Bắt buộc)">
+            <select id="gioiTinh"><option value="Nam">Nam</option><option value="Nữ">Nữ</option></select>
+            <select id="isDoanVien"><option value="Chưa">Chưa vào Đoàn</option><option value="Đoàn viên">Đoàn viên</option></select>
+            <input type="text" id="danToc" placeholder="Dân tộc">
+            <input type="text" id="ngaySinh" placeholder="Ngày sinh (dd/mm/yyyy)">
+            <input type="text" id="sdt" placeholder="SĐT">
+            <input type="text" id="email" placeholder="Email">
+            <input type="text" id="queQuan" placeholder="Quê quán">
+            <input type="text" id="diaChi" placeholder="Địa chỉ" style="grid-column: span 2;">
+            <button class="btn-add" onclick="window.themHocSinh()">➕ Thêm Học Sinh</button>
+        </div>
+        <button class="btn-excel" onclick="window.xuatHocSinhExcel()">📥 Xuất Excel (CSV)</button>
+    </div>
+
+    <div class="search-container">
+        <input type="text" id="searchInput" class="search-input" onkeyup="window.timKiemHocSinh()" placeholder="🔍 Tìm tên học sinh...">
+    </div>
+
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th>STT</th><th>Họ Tên</th><th>Giới Tính</th><th>Đoàn Viên</th><th>Dân Tộc</th><th>Ngày Sinh</th><th>SĐT</th><th>Quê Quán</th><th>Địa Chỉ</th><th>Hành Động</th>
+                </tr>
+            </thead>
+            <tbody id="thanBang">
+                <tr><td colspan="10" style="text-align:center">Đang kết nối đến máy chủ Firebase...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="window.dongFormSua()">&times;</span>
+        <h3>Sửa Thông Tin</h3>
+        <input type="hidden" id="editId">
+        <input type="text" id="editHoTen" placeholder="Họ tên" style="margin-bottom:10px">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px">
+            <select id="editGioiTinh"><option value="Nam">Nam</option><option value="Nữ">Nữ</option></select>
+            <select id="editDoanVien"><option value="Chưa">Chưa vào Đoàn</option><option value="Đoàn viên">Đoàn viên</option></select>
+        </div>
+        <input type="text" id="editNgaySinh" placeholder="Ngày sinh" style="margin-bottom:10px">
+        <input type="text" id="editSdt" placeholder="SĐT" style="margin-bottom:10px">
+        <input type="text" id="editQueQuan" placeholder="Quê quán" style="margin-bottom:10px">
+        <input type="text" id="editDiaChi" placeholder="Địa chỉ" style="margin-bottom:10px">
+        <button style="background:#ffc107; color:#000; width:100%" onclick="window.luuCapNhatHS()">LƯU THAY ĐỔI</button>
+    </div>
+</div>
+
+<div id="loginModal" class="modal">
+    <div class="modal-content" style="width:300px">
+        <span class="close-btn" onclick="window.dongFormDangNhap()">&times;</span>
+        <h3>Đăng nhập Admin</h3>
+        <input type="text" id="loginUser" placeholder="Tên đăng nhập" style="margin-bottom:10px">
+        <input type="password" id="loginPass" placeholder="Mật khẩu" style="margin-bottom:10px">
+        <button style="background:#007bff; width:100%" onclick="window.xuLyDangNhap()">ĐĂNG NHẬP</button>
+    </div>
+</div>
+
+<script type="module">
+    // 1. IMPORT FIREBASE
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    // 2. CẤU HÌNH FIREBASE (Dự án list11a4-881e5)
+    const firebaseConfig = {
+        apiKey: "AIzaSyDLkLYuOMgohtOrY6bgCGMVgXtX1gxyhjU",
+        authDomain: "list11a4-881e5.firebaseapp.com",
+        projectId: "list11a4-881e5",
+        storageBucket: "list11a4-881e5.firebasestorage.app",
+        messagingSenderId: "38420140568",
+        appId: "1:38420140568:web:9d73883049845f0cd3296d",
+        measurementId: "G-W1RV28264K"
+    };
+
+    // Khởi tạo
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const COLLECTION_NAME = "hocsinh_11a4"; // Tên bảng dữ liệu
+
+    // Biến toàn cục
+    let currentRole = localStorage.getItem('user_role') || 'guest';
+    let currentUser = localStorage.getItem('user_name') || 'Khách';
+    let danhSachHocSinh = [];
+
+    // --- LOGIC REALTIME (Lắng nghe dữ liệu) ---
+    onSnapshot(collection(db, COLLECTION_NAME), (snapshot) => {
+        danhSachHocSinh = [];
+        snapshot.forEach((doc) => {
+            let data = doc.data();
+            data.id = doc.id; // Lấy ID của document
+            danhSachHocSinh.push(data);
+        });
+        
+        // Sắp xếp theo tên (tùy chọn)
+        danhSachHocSinh.sort((a, b) => a.hoTen.localeCompare(b.hoTen));
+        
+        window.hienThiHocSinh();
+    }, (error) => {
+        console.error("Lỗi kết nối:", error);
+        document.getElementById("thanBang").innerHTML = `<tr><td colspan="10" style="color:red; text-align:center">Lỗi kết nối! Vui lòng kiểm tra Firestore Rules (Native Mode).<br>${error.message}</td></tr>`;
+    });
+
+    // --- CÁC HÀM XỬ LÝ (Gán vào window) ---
+
+    // 1. Hiển thị bảng
+    window.hienThiHocSinh = function(data = danhSachHocSinh) {
+        let tbody = document.getElementById("thanBang");
+        let html = '';
+        // Quyền sửa/xóa: Chỉ Admin hoặc Super Admin
+        let canEdit = (currentRole === 'super_admin' || currentRole === 'admin');
+        
+        // Update thống kê
+        document.getElementById("tongSiSo").innerText = data.length;
+        document.getElementById("tongNam").innerText = data.filter(h=>h.gioiTinh==='Nam').length;
+        document.getElementById("tongNu").innerText = data.filter(h=>h.gioiTinh==='Nữ').length;
+        document.getElementById("tongDoanVien").innerText = data.filter(h=>h.doanVien==='Đoàn viên').length;
+
+        if(data.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="10" style="text-align:center">Chưa có dữ liệu học sinh.</td></tr>';
+            return;
+        }
+
+        data.forEach((hs, i) => {
+            let isDoan = hs.doanVien === 'Đoàn viên' ? '<span class="badge-doan">🇻🇳 Đoàn viên</span>' : 'Chưa';
+            html += `<tr>
+                <td>${i+1}</td>
+                <td><b>${hs.hoTen}</b></td>
+                <td>${hs.gioiTinh}</td>
+                <td>${isDoan}</td>
+                <td>${hs.danToc || ''}</td>
+                <td>${hs.ngaySinh || ''}</td>
+                <td>${hs.sdt || ''}</td>
+                <td>${hs.queQuan || ''}</td>
+                <td>${hs.diaChi || ''}</td>
+                <td>${canEdit ? 
+                    `<button class="btn-edit" onclick="window.chuanBiSua('${hs.id}')">Sửa</button> 
+                     <button class="btn-delete" onclick="window.xoaHocSinh('${hs.id}')">Xóa</button>` 
+                    : '<span style="color:#ccc">---</span>'}</td>
+            </tr>`;
+        });
+        tbody.innerHTML = html;
+    }
+
+    // 2. Thêm mới
+    window.themHocSinh = async function() {
+        let t = document.getElementById("hoTen").value.trim();
+        if(!t) return alert("Vui lòng nhập họ tên học sinh!");
+        
+        const hsMoi = {
+            hoTen: t,
+            gioiTinh: document.getElementById("gioiTinh").value,
+            doanVien: document.getElementById("isDoanVien").value,
+            danToc: document.getElementById("danToc").value,
+            ngaySinh: document.getElementById("ngaySinh").value,
+            sdt: document.getElementById("sdt").value,
+            queQuan: document.getElementById("queQuan").value,
+            diaChi: document.getElementById("diaChi").value,
+            ngayTao: new Date().toISOString()
+        };
+
+        try {
+            await addDoc(collection(db, COLLECTION_NAME), hsMoi);
+            alert("✅ Đã thêm học sinh thành công!");
+            // Clear form
+            document.querySelectorAll('#adminArea input').forEach(input => input.value = '');
+        } catch (e) {
+            alert("Lỗi khi thêm: " + e.message);
+        }
+    }
+
+    // 3. Xóa
+    window.xoaHocSinh = async function(id) {
+        if(confirm("Bạn có chắc muốn xóa học sinh này không? Hành động này không thể hoàn tác.")) {
+            try {
+                await deleteDoc(doc(db, COLLECTION_NAME, id));
+            } catch (e) {
+                alert("Lỗi xóa: " + e.message);
+            }
+        }
+    }
+
+    // 4. Sửa (Load Form)
+    window.chuanBiSua = function(id) {
+        let hs = danhSachHocSinh.find(h => h.id === id);
+        if(!hs) return;
+        
+        document.getElementById("editId").value = hs.id;
+        document.getElementById("editHoTen").value = hs.hoTen;
+        document.getElementById("editGioiTinh").value = hs.gioiTinh;
+        document.getElementById("editDoanVien").value = hs.doanVien;
+        document.getElementById("editNgaySinh").value = hs.ngaySinh;
+        document.getElementById("editSdt").value = hs.sdt;
+        document.getElementById("editQueQuan").value = hs.queQuan;
+        document.getElementById("editDiaChi").value = hs.diaChi;
+        document.getElementById("editModal").style.display = "flex";
+    }
+
+    // 5. Lưu Sửa (Update)
+    window.luuCapNhatHS = async function() {
+        let id = document.getElementById("editId").value;
+        const dataMoi = {
+            hoTen: document.getElementById("editHoTen").value,
+            gioiTinh: document.getElementById("editGioiTinh").value,
+            doanVien: document.getElementById("editDoanVien").value,
+            ngaySinh: document.getElementById("editNgaySinh").value,
+            sdt: document.getElementById("editSdt").value,
+            queQuan: document.getElementById("editQueQuan").value,
+            diaChi: document.getElementById("editDiaChi").value
+        };
+
+        try {
+            await updateDoc(doc(db, COLLECTION_NAME, id), dataMoi);
+            alert("✅ Cập nhật thành công!");
+            window.dongFormSua();
+        } catch (e) {
+            alert("Lỗi cập nhật: " + e.message);
+        }
+    }
+
+    // 6. Đăng nhập / Đăng xuất
+    window.xuLyDangNhap = function() {
+        let u = document.getElementById("loginUser").value;
+        let p = document.getElementById("loginPass").value;
+
+        // Tài khoản cứng (Hardcode)
+        if(u === 'trannhuthang' && p === '26032009') {
+            currentRole = 'super_admin';
+            currentUser = 'Admin Thắng';
+            saveAuth();
+            window.capNhatGiaoDien();
+            window.hienThiHocSinh(); // Render lại để hiện nút
+            window.dongFormDangNhap();
+            alert("Xin chào Admin!");
+        } else {
+            alert("Sai tên đăng nhập hoặc mật khẩu!");
+        }
+    }
+
+    window.dangXuat = function() {
+        if(confirm("Đăng xuất?")) {
+            currentRole = 'guest';
+            currentUser = 'Khách';
+            saveAuth();
+            window.location.reload(); // Tải lại trang cho sạch
+        }
+    }
+
+    function saveAuth() {
+        localStorage.setItem('user_role', currentRole);
+        localStorage.setItem('user_name', currentUser);
+    }
+
+    // 7. Giao diện & Tiện ích
+    window.capNhatGiaoDien = function() {
+        document.getElementById("userStatus").innerText = currentUser;
+        
+        if(currentRole === 'super_admin' || currentRole === 'admin') {
+            document.getElementById("userStatus").className = "status-badge role-super";
+            document.getElementById("adminArea").style.display = "block";
+            document.getElementById("btnAuth").style.display = "none";
+            document.getElementById("btnLogout").style.display = "inline-block";
+        } else {
+            document.getElementById("userStatus").className = "status-badge role-guest";
+            document.getElementById("adminArea").style.display = "none";
+            document.getElementById("btnAuth").style.display = "inline-block";
+            document.getElementById("btnLogout").style.display = "none";
+        }
+    }
+
+    window.timKiemHocSinh = function() {
+        let key = document.getElementById("searchInput").value.toLowerCase();
+        let filtered = danhSachHocSinh.filter(h => h.hoTen.toLowerCase().includes(key));
+        window.hienThiHocSinh(filtered);
+    }
+    
+    window.xuatHocSinhExcel = function() {
+        let csv = "\ufeffSTT,Họ Tên,Giới Tính,Đoàn Viên,Ngày Sinh,SĐT,Quê Quán\n";
+        danhSachHocSinh.forEach((hs, i) => {
+            csv += `${i + 1},${hs.hoTen},${hs.gioiTinh},${hs.doanVien},${hs.ngaySinh},${hs.sdt},${hs.queQuan}\n`;
+        });
+        let blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        let link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.download = "Danh_Sach_11A4.csv";
+        link.click();
+    }
+
+    window.moFormDangNhap = () => document.getElementById("loginModal").style.display = "flex";
+    window.dongFormDangNhap = () => document.getElementById("loginModal").style.display = "none";
+    window.dongFormSua = () => document.getElementById("editModal").style.display = "none";
+
+    // Khởi chạy
+    window.capNhatGiaoDien();
+</script>
+</body>
+</html>
