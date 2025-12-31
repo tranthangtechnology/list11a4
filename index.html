@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản Lý Học Sinh 11A4 - Ultimate V7.2 (K12 Update)</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f2f5; margin: 0; padding: 10px; }
+        .container { max-width: 1250px; margin: 0 auto; background: white; padding: 15px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+        
+        .header-section { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #007bff; padding-bottom: 15px; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+        h1 { margin: 0; color: #2c3e50; font-size: 24px; }
+        
+        .status-badge { padding: 6px 12px; border-radius: 20px; font-size: 13px; font-weight: 600; display: inline-block; }
+        .role-super { background: #6610f2; color: #fff; }
+        .role-admin { background: #d1e7dd; color: #0f5132; }
+        .role-user { background: #cfe2ff; color: #084298; }
+        .role-guest { background: #f8d7da; color: #842029; }
+
+        .stats-bar { display: flex; gap: 15px; background: #e7f1ff; padding: 15px; border-radius: 8px; margin-bottom: 20px; color: #004085; font-weight: 600; flex-wrap: wrap; }
+        .stats-item span { color: #dc3545; font-size: 1.2em; margin-left: 5px; }
+
+        .panel { background: #fff3cd; border: 1px solid #ffeeba; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: none; }
+        .admin-title { font-weight: bold; margin-bottom: 15px; color: #856404; text-transform: uppercase; border-bottom: 1px solid #ffeeba; padding-bottom: 5px; font-size: 14px; }
+        
+        .form-group { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 15px; }
+        input, select, textarea { padding: 10px; border: 1px solid #ced4da; border-radius: 6px; width: 100%; box-sizing: border-box; font-size: 14px; outline: none; }
+        
+        button { cursor: pointer; padding: 10px 15px; border: none; border-radius: 6px; color: white; font-weight: 600; transition: 0.2s; font-size: 14px; }
+        .btn-add { background-color: #198754; grid-column: 1 / -1; }
+        .btn-edit { background-color: #ffc107; color: #000; font-size: 12px; padding: 5px 8px; }
+        .btn-delete { background-color: #dc3545; font-size: 12px; padding: 5px 8px; }
+        .btn-excel { background-color: #198754; }
+
+        .log-section { background: white; border: 1px solid #ddd; border-radius: 6px; overflow: hidden; }
+        .log-header { background: #6610f2; color: white; display: grid; grid-template-columns: 120px 150px 1fr; font-weight: bold; padding: 10px; font-size: 12px; text-transform: uppercase; }
+        .log-body { max-height: 250px; overflow-y: auto; }
+        .log-row { display: grid; grid-template-columns: 120px 150px 1fr; border-bottom: 1px solid #eee; padding: 8px 10px; font-size: 12px; }
+        
+        .super-admin-layout { display: grid; grid-template-columns: 1fr 1.5fr; gap: 20px; }
+        @media (max-width: 768px) { .super-admin-layout { grid-template-columns: 1fr; } .form-group { grid-template-columns: 1fr; } }
+
+        .table-responsive { overflow-x: auto; border-radius: 8px; box-shadow: 0 0 0 1px #dee2e6; margin-top: 20px; }
+        table { width: 100%; border-collapse: collapse; min-width: 900px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #dee2e6; }
+        th { background-color: #007bff; color: white; text-transform: uppercase; font-size: 13px; }
+
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(3px); align-items: center; justify-content: center; }
+        .modal-content { background: white; padding: 25px; border-radius: 12px; width: 500px; max-width: 95%; position: relative; box-sizing: border-box; }
+        .close-btn { position: absolute; right: 20px; top: 15px; font-size: 28px; cursor: pointer; color: #aaa; }
+
+        .search-container { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
+        .search-input { flex: 1; max-width: 300px; padding: 10px; border: 2px solid #007bff; border-radius: 6px; }
+
+        .excel-import-area { border-top: 1px dashed #ccc; margin-top: 15px; padding-top: 15px; }
+        .file-upload-wrapper { display: flex; gap: 10px; align-items: center; }
+
+        .notice-board { background: #e3f2fd; border-left: 5px solid #2196f3; padding: 15px; margin-bottom: 20px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; }
+        .notice-content { font-weight: 500; color: #0d47a1; }
+        .btn-bell { background: none; border: none; font-size: 24px; cursor: pointer; position: relative; }
+        .btn-bell:hover { transform: scale(1.1); }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header-section">
+        <h1>🎓 Quản Lý Lớp 11A4 - Dev By Trần Thắng Technology</h1>
+        <div class="admin-controls">
+            <button class="btn-bell" onclick="window.hienThiThongBaoModal()" title="Xem thông báo lớp">🔔</button>
+            
+            <span id="userStatus" class="status-badge role-guest">Khách</span>
+            <button id="btnAuth" style="background:#0d6efd" onclick="window.moFormDangNhap()">🔑 Đăng nhập</button>
+            <button id="btnChangePass" style="background:#ffc107; color:black; display:none" onclick="window.moFormDoiMK()">🔐 Đổi MK</button>
+            <button id="btnLogout" style="background:#6c757d; display:none" onclick="window.dangXuat()">🚪 Đăng xuất</button>
+        </div>
+    </div>
+
+    <div class="stats-bar">
+        <div class="stats-item">Tổng sĩ số: <span id="tongSiSo">0</span></div>
+        <div class="stats-item">Nam: <span id="tongNam">0</span> 👦</div>
+        <div class="stats-item">Nữ: <span id="tongNu">0</span> 👧</div>
+    </div>
+
+    <div id="superAdminPanel" class="panel">
+        <div class="super-admin-layout">
+            <div>
+                <div class="admin-title">🛡️ Quản lý tài khoản phụ</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr 1.2fr 80px; gap: 5px; margin-bottom: 10px;">
+                    <input type="text" id="newUsername" placeholder="User">
+                    <input type="text" id="newPassword" placeholder="Pass">
+                    <select id="newRole">
+                        <option value="admin">Phó Admin</option>
+                        <option value="user">Thành viên</option>
+                    </select>
+                    <button style="background:#6610f2" onclick="window.themTaiKhoan()">Tạo</button>
+                </div>
+                <div class="table-responsive" style="margin-top: 5px;">
+                    <table style="min-width: auto; font-size: 12px; margin: 0;">
+                        <thead><tr><th>USER</th><th>ROLE</th><th style="text-align:center">HÀNH ĐỘNG</th></tr></thead>
+                        <tbody id="bodyTaiKhoan"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div>
+                <div class="admin-title">📜 Nhật ký hoạt động (Logs)</div>
+                <div class="log-section">
+                    <div class="log-header">
+                        <div>Thời gian</div>
+                        <div>Người dùng</div>
+                        <div style="border:none">Hành động</div>
+                    </div>
+                    <div class="log-body" id="bodyLog">
+                        <div style="padding:10px; text-align:center">Đang tải nhật ký...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="adminArea" class="panel">
+        <div style="margin-bottom: 20px; border-bottom: 2px dashed #ccc; padding-bottom: 20px;">
+            <div class="admin-title" style="color: #d63384; border-color: #d63384;">📢 Cập nhật Thông Báo Lớp</div>
+            <div style="display: flex; gap: 10px;">
+                <textarea id="txtThongBaoInput" rows="2" style="flex:1; padding:10px;" placeholder="Nhập nội dung thông báo mới..."></textarea>
+                <button onclick="window.luuThongBao()" style="background: #d63384;">Lưu Thông Báo</button>
+            </div>
+        </div>
+
+        <div class="admin-title">🛠️ Thêm học sinh mới</div>
+        <div class="form-group">
+            <input type="text" id="hoTen" placeholder="Họ và Tên (Bắt buộc)">
+            <input type="text" id="k12" placeholder="Tài khoản K12 Online"> <select id="gioiTinh"><option value="Nam">Nam</option><option value="Nữ">Nữ</option></select>
+            <input type="text" id="danToc" placeholder="Dân tộc">
+            <input type="text" id="ngaySinh" placeholder="Ngày sinh">
+            <input type="text" id="sdt" placeholder="Số điện thoại">
+            <input type="text" id="queQuan" placeholder="Quê quán">
+            <input type="text" id="diaChi" placeholder="Địa chỉ">
+            <button class="btn-add" onclick="window.themHocSinh()">➕ Thêm Học Sinh</button>
+        </div>
+        
+        <div class="excel-import-area">
+            <div class="admin-title" style="color:#0d6efd; border-color:#0d6efd">📂 Nhập dữ liệu từ Excel</div>
+            <div style="display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px;">
+                <input type="file" id="fileExcel" accept=".xlsx, .xls, .csv">
+                <button class="btn-excel" style="background:#0d6efd;" onclick="window.nhapTuExcel()">📤 Upload File</button>
+                <button class="btn-excel" onclick="window.xuatHocSinhExcel()">📥 Tải về DS</button>
+            </div>
+            <p style="font-size: 12px; color: #666; margin-top: 5px;">* File Excel cần có dòng tiêu đề: <b>Họ Tên, K12 Online, Giới Tính, Dân Tộc, Ngày Sinh, SĐT, Quê Quán, Địa Chỉ</b></p>
+        </div>
+    </div>
+
+    <div class="search-container">
+        <input type="text" id="searchInput" class="search-input" onkeyup="window.timKiemHocSinh()" placeholder="🔍 Tìm tên học sinh...">
+    </div>
+
+    <div class="table-responsive">
+        <table>
+            <thead>
+                <tr>
+                    <th>STT</th>
+                    <th>Họ Tên</th>
+                    <th style="color: #d63384;">K12 Online</th> <th>Giới Tính</th>
+                    <th>Dân Tộc</th>
+                    <th>Ngày Sinh</th>
+                    <th>SĐT</th>
+                    <th>Quê Quán</th>
+                    <th>Địa Chỉ</th>
+                    <th>Hành Động</th>
+                </tr>
+            </thead>
+            <tbody id="thanBang">
+                <tr><td colspan="10" style="text-align:center">Đang kết nối Firebase...</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div id="noticeModal" class="modal" style="display:none;">
+    <div class="modal-content">
+        <span class="close-btn" onclick="document.getElementById('noticeModal').style.display='none'">&times;</span>
+        <h2 style="color:#007bff; text-align:center">📢 Thông Báo Lớp 11A4</h2>
+        <div id="noticeContentDisplay" style="padding: 20px; background: #f8f9fa; border-radius: 8px; line-height: 1.6; white-space: pre-wrap;">
+            Đang tải thông báo...
+        </div>
+        <div style="margin-top: 20px; text-align: right; font-size: 12px; color: #666;">
+            Cập nhật lần cuối: <span id="noticeTime">--/--</span> bởi <span id="noticeAuthor">Admin</span>
+        </div>
+        <button style="width:100%; margin-top:15px; background:#6c757d" onclick="document.getElementById('noticeModal').style.display='none'">Đã Hiểu</button>
+    </div>
+</div>
+
+<div id="changePassModal" class="modal">
+    <div class="modal-content" style="width: 350px;">
+        <span class="close-btn" onclick="window.dongFormDoiMK()">&times;</span>
+        <div style="font-size: 18px; font-weight: bold; margin-bottom: 20px; text-align: center;">🔐 Đổi Mật Khẩu</div>
+        <div style="margin-bottom:10px"><label>Mật khẩu cũ:</label><input type="password" id="oldPass"></div>
+        <div style="margin-bottom:15px"><label>Mật khẩu mới:</label><input type="password" id="newPass"></div>
+        <button style="background:#28a745; width:100%; padding:12px" onclick="window.xuLyDoiMK()">LƯU MẬT KHẨU</button>
+    </div>
+</div>
+
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="window.dongFormSua()">&times;</span>
+        <div style="font-size: 18px; font-weight: bold; margin-bottom: 20px; text-align: center;">📝 Sửa Thông Tin</div>
+        <input type="hidden" id="editId">
+        <div style="margin-bottom:10px"><label>Họ tên:</label><input type="text" id="editHoTen"></div>
+        <div style="margin-bottom:10px"><label>K12 Online:</label><input type="text" id="editK12"></div> <div style="margin-bottom:10px"><label>Giới tính:</label><select id="editGioiTinh"><option value="Nam">Nam</option><option value="Nữ">Nữ</option></select></div>
+        <div style="margin-bottom:10px"><label>Dân tộc:</label><input type="text" id="editDanToc"></div>
+        <div style="margin-bottom:10px"><label>Ngày sinh:</label><input type="text" id="editNgaySinh"></div>
+        <div style="margin-bottom:10px"><label>SĐT:</label><input type="text" id="editSdt"></div>
+        <div style="margin-bottom:10px"><label>Quê quán:</label><input type="text" id="editQueQuan"></div>
+        <div style="margin-bottom:10px"><label>Địa chỉ:</label><input type="text" id="editDiaChi"></div>
+        <button style="background:#ffc107; color:#000; width:100%; padding:12px; font-weight:bold" onclick="window.luuCapNhatHS()">💾 LƯU THAY ĐỔI</button>
+    </div>
+</div>
+
+<div id="loginModal" class="modal">
+    <div class="modal-content" style="width: 350px;">
+        <span class="close-btn" onclick="window.dongFormDangNhap()">&times;</span>
+        <div style="font-size: 18px; font-weight: bold; margin-bottom: 20px; text-align: center;">Đăng Nhập Admin</div>
+        <div style="margin-bottom:10px"><input type="text" id="loginUser" placeholder="Tên đăng nhập"></div>
+        <div style="margin-bottom:15px"><input type="password" id="loginPass" placeholder="Mật khẩu"></div>
+        <button style="background:#007bff; width:100%; padding:12px" onclick="window.xuLyDangNhap()">ĐĂNG NHẬP</button>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, onSnapshot, doc, deleteDoc, updateDoc, query, orderBy, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyDLkLYuOMgohtOrY6bgCGMVgXtX1gxyhjU",
+        authDomain: "list11a4-881e5.firebaseapp.com",
+        projectId: "list11a4-881e5",
+        storageBucket: "list11a4-881e5.firebasestorage.app",
+        messagingSenderId: "38420140568",
+        appId: "1:38420140568:web:9d73883049845f0cd3296d",
+        measurementId: "G-W1RV28264K"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    
+    const COL_STUDENTS = "hocsinh_11a4";
+    const COL_LOGS = "logs_11a4";
+    const COL_ACCOUNTS = "accounts_11a4";
+    const COL_SETTINGS = "settings_11a4"; 
+
+    let currentRole = localStorage.getItem('user_role') || 'guest';
+    let currentUser = localStorage.getItem('user_name') || 'Khách';
+    let danhSachHocSinh = [];
+    let danhSachTaiKhoan = [];
+    let danhSachLog = [];
+
+    function formatExcelDate(input) {
+        if (!input) return "";
+        if (typeof input === 'number') {
+            const date = new Date(Math.round((input - 25569) * 86400 * 1000));
+            date.setHours(date.getHours() + 12); 
+            const d = date.getDate().toString().padStart(2, '0');
+            const m = (date.getMonth() + 1).toString().padStart(2, '0');
+            const y = date.getFullYear();
+            return `${d}/${m}/${y}`;
+        }
+        return input;
+    }
+
+    
+    onSnapshot(collection(db, COL_STUDENTS), (snapshot) => {
+        danhSachHocSinh = [];
+        snapshot.forEach(doc => { let d = doc.data(); d.id = doc.id; danhSachHocSinh.push(d); });
+        
+        danhSachHocSinh.sort((a, b) => {
+            let getName = (name) => {
+                if(!name) return "";
+                let parts = name.trim().split(/\s+/);
+                return parts[parts.length - 1].toLowerCase();
+            };
+            let tenA = getName(a.hoTen);
+            let tenB = getName(b.hoTen);
+            if (tenA !== tenB) return tenA.localeCompare(tenB, 'vi');
+            return a.hoTen.toLowerCase().localeCompare(b.hoTen.toLowerCase(), 'vi');
+        });
+
+        window.hienThiHocSinh();
+    });
+
+    onSnapshot(collection(db, COL_ACCOUNTS), (snapshot) => {
+        danhSachTaiKhoan = [];
+        snapshot.forEach(doc => { let d = doc.data(); d.id = doc.id; danhSachTaiKhoan.push(d); });
+        if(currentRole === 'super_admin') window.hienThiTaiKhoan();
+    });
+
+    const qLogs = query(collection(db, COL_LOGS), orderBy("createdAt", "desc"));
+    onSnapshot(qLogs, (snapshot) => {
+        danhSachLog = [];
+        snapshot.forEach(doc => { let d = doc.data(); d.id = doc.id; danhSachLog.push(d); });
+        if(currentRole === 'super_admin') window.hienThiLog();
+    });
+
+    onSnapshot(doc(db, COL_SETTINGS, "general"), (doc) => {
+        if (doc.exists()) {
+            const data = doc.data();
+            const noticeContent = data.notification || "Chưa có thông báo mới.";
+            const lastUpdated = data.updatedAt ? new Date(data.updatedAt).toLocaleString('vi-VN') : "--";
+            
+            document.getElementById("noticeContentDisplay").innerText = noticeContent;
+            document.getElementById("noticeTime").innerText = lastUpdated;
+            document.getElementById("noticeAuthor").innerText = data.updatedBy || "Admin";
+            
+            if(document.getElementById("txtThongBaoInput")) {
+                document.getElementById("txtThongBaoInput").value = noticeContent;
+            }
+        }
+    });
+
+    window.luuThongBao = async function() {
+        const content = document.getElementById("txtThongBaoInput").value;
+        if(!content) return alert("Vui lòng nhập nội dung thông báo!");
+
+        try {
+            await setDoc(doc(db, COL_SETTINGS, "general"), {
+                notification: content,
+                updatedAt: new Date().toISOString(),
+                updatedBy: currentUser
+            }, { merge: true });
+            
+            window.ghiLog(`Cập nhật thông báo lớp`);
+            alert("✅ Đã lưu thông báo thành công!");
+        } catch(e) {
+            alert("Lỗi khi lưu thông báo: " + e.message);
+        }
+    }
+
+    window.hienThiThongBaoModal = function() {
+        document.getElementById('noticeModal').style.display = 'flex';
+    }
+
+    window.moFormDoiMK = function() {
+        document.getElementById("oldPass").value = "";
+        document.getElementById("newPass").value = "";
+        document.getElementById("changePassModal").style.display = "flex";
+    }
+
+    window.dongFormDoiMK = function() {
+        document.getElementById("changePassModal").style.display = "none";
+    }
+
+    window.xuLyDoiMK = async function() {
+        let oldPass = document.getElementById("oldPass").value;
+        let newPass = document.getElementById("newPass").value;
+
+        if(!oldPass || !newPass) return alert("Vui lòng nhập đầy đủ thông tin!");
+
+        if(currentUser === 'Admin Thắng') {
+            return alert("⚠️ Tài khoản Mặc Định (Admin Thắng) không thể đổi mật khẩu tại đây.");
+        }
+
+        let acc = danhSachTaiKhoan.find(a => a.user === currentUser);
+        if(!acc) return alert("Lỗi: Không tìm thấy tài khoản!");
+
+        if(acc.pass !== oldPass) {
+            return alert("❌ Mật khẩu cũ không chính xác!");
+        }
+
+        try {
+            await updateDoc(doc(db, COL_ACCOUNTS, acc.id), { pass: newPass });
+            window.ghiLog(`Đổi mật khẩu thành: ${newPass}`);
+            alert("✅ Đổi mật khẩu thành công!");
+            window.dongFormDoiMK();
+        } catch(e) {
+            alert("Lỗi khi cập nhật: " + e.message);
+        }
+    }
+
+    window.adminDoiPass = async function(id, user) {
+        let newP = prompt(`Nhập mật khẩu mới cho tài khoản ${user}:`);
+        if(newP) {
+            try {
+                await updateDoc(doc(db, COL_ACCOUNTS, id), { pass: newP });
+                window.ghiLog(`Admin đổi pass của ${user} thành: ${newP}`);
+                alert("Đã cập nhật mật khẩu thành công!");
+            } catch(e) { alert("Lỗi: " + e.message); }
+        }
+    }
+
+    window.nhapTuExcel = async function() {
+        const fileInput = document.getElementById('fileExcel');
+        if (!fileInput.files.length) return alert("Vui lòng chọn file Excel!");
+        const file = fileInput.files[0];
+        const reader = new FileReader();
+        reader.onload = async function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, {type: 'array'});
+                const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                const jsonData = XLSX.utils.sheet_to_json(worksheet);
+                if (jsonData.length === 0) return alert("File rỗng!");
+                if(!confirm(`Thêm ${jsonData.length} học sinh?`)) return;
+
+                const btn = document.querySelector('button[onclick="window.nhapTuExcel()"]');
+                const oldText = btn.innerText;
+                btn.innerText = "⏳..."; btn.disabled = true;
+
+                let count = 0;
+                for (const row of jsonData) {
+                    const findKey = (searchArr) => {
+                        const keys = Object.keys(row);
+                        for(let k of keys) { if(searchArr.some(s => k.toLowerCase().includes(s.toLowerCase()))) return k; }
+                        return null;
+                    };
+                    const hoTenKey = findKey(["Họ Tên", "Ho Ten", "Name"]);
+                    if (!hoTenKey || !row[hoTenKey]) continue; 
+
+                    const hsMoi = {
+                        hoTen: row[hoTenKey],
+                        k12: row[findKey(["K12", "K12 Online", "Account"])] || "",
+                        gioiTinh: row[findKey(["Giới Tính", "Gioi Tinh"])] || "Nam",
+                        danToc: row[findKey(["Dân Tộc", "Dan Toc"])] || "",
+                        ngaySinh: formatExcelDate(row[findKey(["Ngày Sinh", "Ngay Sinh"])]),
+                        sdt: row[findKey(["SĐT", "Phone"])] || "",
+                        queQuan: row[findKey(["Quê Quán", "Que Quan"])] || "",
+                        diaChi: row[findKey(["Địa Chỉ", "Dia Chi"])] || "",
+                        ngayTao: new Date().toISOString()
+                    };
+                    await addDoc(collection(db, COL_STUDENTS), hsMoi);
+                    count++;
+                }
+                window.ghiLog(`Import Excel: ${count} HS`);
+                alert(`✅ Đã thêm ${count} học sinh!`);
+                fileInput.value = ""; btn.innerText = oldText; btn.disabled = false;
+            } catch (err) { alert("Lỗi file: " + err.message); }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    window.ghiLog = async function(action) {
+        let now = new Date();
+        let timeStr = now.getHours() + ":" + (now.getMinutes()<10?'0':'') + now.getMinutes() + " " + now.getDate() + "/" + (now.getMonth()+1);
+        try { await addDoc(collection(db, COL_LOGS), { time: timeStr, user: currentUser, action: action, createdAt: now.toISOString() }); } catch(e) {}
+    }
+
+    window.hienThiLog = function() {
+        let container = document.getElementById("bodyLog"), html = '';
+        danhSachLog.forEach(l => { html += `<div class="log-row"><div>${l.time}</div><div>${l.user}</div><div>${l.action}</div></div>`; });
+        container.innerHTML = html || '<div style="padding:10px;text-align:center">Chưa có nhật ký</div>';
+    }
+
+    window.themTaiKhoan = async function() {
+        let u = document.getElementById("newUsername").value;
+        let p = document.getElementById("newPassword").value;
+        let r = document.getElementById("newRole").value;
+        if(u && p) {
+            try {
+                await addDoc(collection(db, COL_ACCOUNTS), { user: u, pass: p, role: r });
+                document.getElementById("newUsername").value = "";
+                document.getElementById("newPassword").value = "";
+                window.ghiLog(`Tạo user: ${u} - Pass: ${p}`); 
+            } catch(e) { alert("Lỗi: " + e.message); }
+        }
+    }
+
+    window.hienThiTaiKhoan = function() {
+        let h = '';
+        danhSachTaiKhoan.forEach((a) => {
+            h += `<tr>
+                <td>${a.user}</td>
+                <td>${a.role}</td>
+                <td style="text-align:center">
+                    <button class="btn-edit" onclick="window.adminDoiPass('${a.id}', '${a.user}')" style="margin-right:5px; font-size:11px">Đổi Pass</button>
+                    <button class="btn-delete" onclick="window.xoaTK('${a.id}', '${a.user}')" style="font-size:11px">Xóa</button>
+                </td>
+            </tr>`;
+        });
+        document.getElementById("bodyTaiKhoan").innerHTML = h;
+    }
+
+    window.xoaTK = async function(id, userName) {
+        if(confirm("Xóa tài khoản này?")) {
+            try { await deleteDoc(doc(db, COL_ACCOUNTS, id)); window.ghiLog(`Xóa user: ${userName}`); } catch(e) { alert("Lỗi: " + e.message); }
+        }
+    }
+
+    window.hienThiHocSinh = function(data = danhSachHocSinh) {
+        let tbody = document.getElementById("thanBang");
+        let html = '';
+        let canEdit = (currentRole === 'super_admin' || currentRole === 'admin');
+        let canView = (currentRole !== 'guest');
+        
+        document.getElementById("tongSiSo").innerText = data.length;
+        document.getElementById("tongNam").innerText = data.filter(h=>h.gioiTinh==='Nam').length;
+        document.getElementById("tongNu").innerText = data.filter(h=>h.gioiTinh!=='Nam').length;
+
+        if(data.length === 0) { tbody.innerHTML = '<tr><td colspan="10" style="text-align:center">Danh sách trống.</td></tr>'; return; }
+
+        data.forEach((hs, i) => {
+            html += `<tr>
+                <td>${i+1}</td>
+                <td><b>${hs.hoTen}</b></td>
+                <td>${canView ? (hs.k12||'') : '***'}</td> <td style="color:${hs.gioiTinh==='Nam'?'blue':'deeppink'}">${hs.gioiTinh}</td>
+                <td>${canView ? (hs.danToc||'') : '***'}</td>
+                <td>${canView ? (hs.ngaySinh||'') : '***'}</td>
+                <td>${canView ? (hs.sdt||'') : '***'}</td>
+                <td>${canView ? (hs.queQuan||'') : '***'}</td>
+                <td>${canView ? (hs.diaChi||'') : '***'}</td>
+                <td>${canEdit ? `<button class="btn-edit" onclick="window.chuanBiSua('${hs.id}')">Sửa</button> <button class="btn-delete" onclick="window.xoaHocSinh('${hs.id}')">Xóa</button>` : '---'}</td>
+            </tr>`;
+        });
+        tbody.innerHTML = html;
+    }
+
+    window.themHocSinh = async function() {
+        let t = document.getElementById("hoTen").value.trim();
+        if(!t) return alert("Nhập tên!");
+        const hsMoi = {
+            hoTen: t, 
+            k12: document.getElementById("k12").value, 
+            gioiTinh: document.getElementById("gioiTinh").value,
+            danToc: document.getElementById("danToc").value, 
+            ngaySinh: document.getElementById("ngaySinh").value,
+            sdt: document.getElementById("sdt").value, 
+            queQuan: document.getElementById("queQuan").value, 
+            diaChi: document.getElementById("diaChi").value
+        };
+        try {
+            await addDoc(collection(db, COL_STUDENTS), hsMoi);
+            window.ghiLog(`Thêm HS: ${t}`);
+            alert("✅ Đã thêm!");
+            document.querySelectorAll('#adminArea input').forEach(input => input.value = '');
+        } catch (e) { alert("Lỗi: " + e.message); }
+    }
+
+    window.xoaHocSinh = async function(id) {
+        if(confirm("Xóa học sinh này?")) {
+            let hs = danhSachHocSinh.find(h=>h.id===id);
+            try { await deleteDoc(doc(db, COL_STUDENTS, id)); window.ghiLog(`Xóa HS: ${hs ? hs.hoTen : 'Unknown'}`); } catch (e) { alert("Lỗi xóa: " + e.message); }
+        }
+    }
+
+    window.luuCapNhatHS = async function() {
+        let id = document.getElementById("editId").value;
+        const dataMoi = {
+            hoTen: document.getElementById("editHoTen").value, 
+            k12: document.getElementById("editK12").value, 
+            gioiTinh: document.getElementById("editGioiTinh").value,
+            danToc: document.getElementById("editDanToc").value, 
+            ngaySinh: document.getElementById("editNgaySinh").value,
+            sdt: document.getElementById("editSdt").value, 
+            queQuan: document.getElementById("editQueQuan").value, 
+            diaChi: document.getElementById("editDiaChi").value
+        };
+        try {
+            await updateDoc(doc(db, COL_STUDENTS, id), dataMoi);
+            window.ghiLog(`Sửa HS: ${dataMoi.hoTen}`);
+            window.dongFormSua();
+            alert("✅ Đã sửa!");
+        } catch(e) { alert("Lỗi: " + e.message); }
+    }
+
+    window.xuLyDangNhap = function() {
+        let u = document.getElementById("loginUser").value;
+        let p = document.getElementById("loginPass").value;
+        if(u === 'trannhuthang' && p === '26032009') {
+            currentRole = 'super_admin'; currentUser = 'Admin Thắng'; loginSuccess();
+        } else {
+            let acc = danhSachTaiKhoan.find(a => a.user === u && a.pass === p);
+            if(acc) { currentRole = acc.role; currentUser = u; loginSuccess(); }
+            else alert("Sai thông tin!");
+        }
+    }
+
+    function loginSuccess() {
+        saveAuth();
+        window.dongFormDangNhap();
+        window.capNhatGiaoDien();
+        window.hienThiHocSinh(); 
+        window.ghiLog("Đăng nhập thành công");
+        alert("Xin chào " + currentUser);
+
+        window.hienThiThongBaoModal();
+    }
+
+    window.capNhatGiaoDien = function() {
+        document.getElementById("userStatus").innerText = currentUser;
+        let isSuper = (currentRole === 'super_admin');
+        let isAdmin = (isSuper || currentRole === 'admin');
+
+        document.getElementById("superAdminPanel").style.display = isSuper ? 'block' : 'none';
+        document.getElementById("adminArea").style.display = isAdmin ? 'block' : 'none';
+        
+        if(currentRole !== 'guest') {
+            document.getElementById("btnAuth").style.display = "none";
+            document.getElementById("btnLogout").style.display = "inline-block";
+            document.getElementById("btnChangePass").style.display = "inline-block"; 
+            document.getElementById("userStatus").className = "status-badge " + (isSuper?'role-super':'role-admin');
+        } else {
+            document.getElementById("btnAuth").style.display = "inline-block";
+            document.getElementById("btnLogout").style.display = "none";
+            document.getElementById("btnChangePass").style.display = "none";
+            document.getElementById("userStatus").className = "status-badge role-guest";
+        }
+
+        if(isSuper) { window.hienThiLog(); window.hienThiTaiKhoan(); }
+    }
+
+    window.dangXuat = function() {
+        if(confirm("Đăng xuất?")) {
+            window.ghiLog("Đăng xuất");
+            currentRole = 'guest'; currentUser = 'Khách';
+            saveAuth();
+            window.location.reload();
+        }
+    }
+    
+    function saveAuth() { localStorage.setItem('user_role', currentRole); localStorage.setItem('user_name', currentUser); }
+    
+    window.chuanBiSua = (id) => {
+        let hs = danhSachHocSinh.find(h=>h.id===id);
+        if(!hs) return;
+        document.getElementById("editId").value = hs.id;
+        document.getElementById("editHoTen").value = hs.hoTen;
+        document.getElementById("editK12").value = hs.k12 || ''; 
+        document.getElementById("editGioiTinh").value = hs.gioiTinh;
+        document.getElementById("editDanToc").value = hs.danToc||'';
+        document.getElementById("editNgaySinh").value = hs.ngaySinh||'';
+        document.getElementById("editSdt").value = hs.sdt||'';
+        document.getElementById("editQueQuan").value = hs.queQuan||'';
+        document.getElementById("editDiaChi").value = hs.diaChi||'';
+        document.getElementById("editModal").style.display = "flex";
+    }
+
+    window.timKiemHocSinh = () => {
+        let k = document.getElementById("searchInput").value.toLowerCase();
+        window.hienThiHocSinh(danhSachHocSinh.filter(h=>h.hoTen.toLowerCase().includes(k)));
+    }
+    
+    window.xuatHocSinhExcel = () => {
+        let csv = "\ufeffSTT,Họ Tên,K12 Online,Giới Tính,Dân Tộc,Ngày Sinh,SĐT,Quê Quán,Địa Chỉ\n";
+        danhSachHocSinh.forEach((hs, i) => csv += `${i+1},${hs.hoTen},${hs.k12||''},${hs.gioiTinh},${hs.danToc||''},${hs.ngaySinh||''},${hs.sdt||''},${hs.queQuan||''},${hs.diaChi||''}\n`);
+        let link = document.createElement("a");
+        link.href = URL.createObjectURL(new Blob([csv], {type: "text/csv;charset=utf-8;"}));
+        link.download = "DS_Lop.csv"; link.click();
+    }
+
+    window.moFormDangNhap = () => document.getElementById("loginModal").style.display = "flex";
+    window.dongFormDangNhap = () => document.getElementById("loginModal").style.display = "none";
+    window.dongFormSua = () => document.getElementById("editModal").style.display = "none";
+
+    window.capNhatGiaoDien();
+    
+    setTimeout(() => {
+        window.hienThiThongBaoModal();
+    }, 1500); 
+</script>
+</body>
+</html>
